@@ -78,13 +78,19 @@ function New-SSLClientStream
     $Buffer = New-Object Byte[] $TcpClient.ReceiveBufferSize
     # here is where we can choose where to get the cert from
     # $Certificate = new X509Certificate2("filename", "password")
-    if ($PSBoundParameters.SslThumb) { 
-	$Certificate = Get-ChildItem Cert:\CurrentUser\My | where Thumbprint -Match $SslThumb
+    if ($PSBoundParameters.SslThumb) {
+       # 
+       # here is where we can choose where to get the cert from
+       $Certificate = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
+       $CertFlags = New-Object System.Security.Cryptography.X509Certificates.X509KeyStorageFlags::Exportable
+       $Certificate.Import("C:\Users\rjbig\OneDrive\code\github\pshutil\aug19-1-csc.pfx", "TVDV28CO", $CertFlags)
+
+	#$Certificate = Get-ChildItem Cert:\CurrentUser\My | where Thumbprint -Match $SslThumb
 	Write-Host "Attempting client cert with DN = $($Certificate.Subject)"
 	$CertColl = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
 	$CertColl.Add($Certificate)
 #        $TcpStream = New-Object System.Net.Security.SslStream($TcpStream, $false)
-        $TcpStream = New-Object System.Net.Security.SslStream($TcpStream, $false, { param($Sender, $Cert, $Chain, $Policy) Write-Host "sender = $($Sender), cert = $($Cert), chain = $(Cchain), ssl policy errors = $($Policy)" ; return $true })
+        $TcpStream = New-Object System.Net.Security.SslStream($TcpStream, $false, { param($Sender, $Cert, $Chain, $Policy) Write-Host "sender = $($Sender), cert = $($Cert), chain = $($Chain), ssl policy errors = $($Policy)" ; return $true })
 	$targethost = $TargetCNorSAN
         $TcpStream.AuthenticateAsClient($targethost,$CertColl,$false)
         Write-Host "TLS Encrypted: $($TcpStream.IsEncrypted)"
@@ -175,7 +181,7 @@ function New-SSLServerStream
 	# here is where we can choose where to get the cert from
 	$Certificate = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
 	$CertFlags = New-Object System.Security.Cryptography.X509Certificates.X509KeyStorageFlags::Exportable
-	$Certificate.Import("msys2-ssc.pfx", "CNNMXBYC", $CertFlags)
+	$Certificate.Import("C:\Users\rjbig\OneDrive\code\github\pshutil\msys2-ssc.pfx", "CNNMXBYC", $CertFlags)
         # $Certificate = Get-ChildItem Cert:\CurrentUser\My | where Subject -Match $SslCn
 	Write-Host "Server cert DN = $($Certificate.Subject)"
         $TcpStream.AuthenticateAsServer($Certificate, $true, $false)
